@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#116149">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Caducidades">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>Gestión de Caducidades APPCC</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <div class="app">
+      <header class="topbar">
+        <div>
+          <p id="kickerText" class="kicker">Restaurante chino · APPCC</p>
+          <h1 id="headerTitle">Control de Caducidades</h1>
+        </div>
+        <div class="topbar-actions">
+          <select id="languageSelect" class="lang-select" aria-label="Idioma">
+            <option value="es">Español</option>
+            <option value="zh">中文</option>
+          </select>
+          <button id="notifyBtn" class="icon-btn" type="button" aria-label="Activar avisos">Avisos</button>
+        </div>
+      </header>
+
+      <main id="screen" class="screen" aria-live="polite"></main>
+
+      <nav class="bottom-nav" aria-label="Navegación principal">
+        <button data-view="dashboardKitchen" class="active" type="button">Cocina</button>
+        <button data-view="dashboardBar" type="button">Bar</button>
+        <button data-view="list" type="button">Lista</button>
+        <button data-view="settings" type="button">Ajustes</button>
+      </nav>
+    </div>
+
+    <section id="printArea" class="print-area" aria-hidden="true"></section>
+    <div id="templatePrintModal" class="modal-backdrop hidden" aria-hidden="true">
+      <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="templatePrintTitle">
+        <h3 id="templatePrintTitle">Imprimir desde plantilla</h3>
+        <p id="templatePrintInfo" class="muted"></p>
+        <label id="templateExpiryLabel">Fecha de caducidad (opcional)
+          <input id="templateExpiryInput" type="datetime-local">
+        </label>
+        <div class="actions">
+          <button id="templatePrintConfirmBtn" class="primary" type="button">Imprimir</button>
+          <button id="templatePrintCancelBtn" class="secondary" type="button">Cancelar</button>
+        </div>
+      </div>
+    </div>
+    <div id="toast" class="toast" role="status"></div>
+    <script src="app.js"></script>
+  </body>
+</html>
