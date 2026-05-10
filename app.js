@@ -144,6 +144,7 @@ const i18n = {
     clearAll: "Borrar todo",
     msgNeedNameExpiry: "Indica el nombre del alimento y la fecha de caducidad.",
     msgNeedExpiry: "Indica la fecha de caducidad.",
+    msgNeedProgrammedExpiry: "Configura una caducidad programada en la plantilla para usar descongelación.",
     msgSavedChanges: "Cambios guardados.",
     msgSavedFood: "Alimento guardado.",
     msgDeletedRecord: "Registro eliminado.",
@@ -298,6 +299,7 @@ const i18n = {
     clearAll: "清空全部",
     msgNeedNameExpiry: "请填写食品名称和到期时间。",
     msgNeedExpiry: "请填写到期时间。",
+    msgNeedProgrammedExpiry: "使用解冻功能前，请先在模板中设置预设到期时间。",
     msgSavedChanges: "修改已保存。",
     msgSavedFood: "记录已保存。",
     msgDeletedRecord: "记录已删除。",
@@ -1592,6 +1594,10 @@ function saveFromTemplateAndPrint() {
   if (!activeTemplateForPrint) return;
   const tpl = activeTemplateForPrint;
   const expiryInput = document.getElementById("templateExpiryInput").value;
+  if (activeTemplateMode === "thaw" && !templateHasProgrammedExpiry(tpl)) {
+    toast(t("msgNeedProgrammedExpiry"));
+    return;
+  }
   if (templateManualExpiryRequired && !expiryInput) {
     toast(t("msgNeedExpiry"));
     return;
