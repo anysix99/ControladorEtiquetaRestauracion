@@ -110,6 +110,7 @@ const i18n = {
     defaultAllergens: "Alérgenos por defecto",
     saveTemplate: "Guardar plantilla",
     noAllergens: "Sin alérgenos",
+    useFactory: "Producto fábrica",
     useMake: "Usar elaboración",
     useOpen: "Usar apertura",
     useThaw: "Usar descongel.",
@@ -158,6 +159,7 @@ const i18n = {
     msgConfirmClear: "¿Seguro que quieres borrar todos los registros y plantillas?",
     msgCleared: "Datos borrados.",
     msgFromTemplate: "Etiqueta creada desde plantilla.",
+    modeFactory: "Producto fábrica / 厂家到期",
     modeMake: "Elaboración / 制作时间",
     modeOpen: "Apertura / 开封时间",
     modeThaw: "Descongelación / 解冻时间",
@@ -280,6 +282,7 @@ const i18n = {
     defaultAllergens: "默认过敏原",
     saveTemplate: "保存模板",
     noAllergens: "无过敏原",
+    useFactory: "厂家产品",
     useMake: "用于制作",
     useOpen: "用于开封",
     useThaw: "用于解冻",
@@ -328,6 +331,7 @@ const i18n = {
     msgConfirmClear: "确定要删除所有记录和模板吗？",
     msgCleared: "数据已清空。",
     msgFromTemplate: "已从模板创建并打印标签。",
+    modeFactory: "厂家产品 / Producto fábrica",
     modeMake: "制作 / Elaboración",
     modeOpen: "开封 / Apertura",
     modeThaw: "解冻 / Descongelación",
@@ -762,6 +766,7 @@ function bindScreenEvents() {
   document.getElementById("templateCreateModal")?.addEventListener("click", (event) => {
     if (event.target.id === "templateCreateModal") closeTemplateCreateModal();
   });
+  document.getElementById("templateActionFactoryBtn")?.addEventListener("click", () => runTemplateAction("factory"));
   document.getElementById("templateActionMakeBtn")?.addEventListener("click", () => runTemplateAction("make"));
   document.getElementById("templateActionOpenBtn")?.addEventListener("click", () => runTemplateAction("open"));
   document.getElementById("templateActionThawBtn")?.addEventListener("click", () => runTemplateAction("thaw"));
@@ -849,6 +854,7 @@ function renderTemplateRows(area) {
                 <span class="muted">${storageLabel(tpl.storage)} · ${templateExpiryLabel(tpl)} · ${(tpl.allergens || []).join(", ") || t("noAllergens")}</span>
                 <p class="muted">${escapeHtml(tpl.suggestion || "")}</p>
                 <div class="actions">
+                  <button class="secondary" data-use-template="${tpl.id}" data-mode="factory" type="button">${t("useFactory")}</button>
                   <button class="secondary" data-use-template="${tpl.id}" data-mode="make" type="button">${t("useMake")}</button>
                   <button class="secondary" data-use-template="${tpl.id}" data-mode="open" type="button">${t("useOpen")}</button>
                   <button class="secondary" data-use-template="${tpl.id}" data-mode="thaw" type="button">${t("useThaw")}</button>
@@ -1241,6 +1247,7 @@ function templateActionModalHtml() {
         <h3 id="templateActionTitle">${t("templateActionTitle")}</h3>
         <p id="templateActionInfo" class="muted"></p>
         <div class="actions">
+          <button id="templateActionFactoryBtn" class="secondary" type="button">${t("useFactory")}</button>
           <button id="templateActionMakeBtn" class="secondary" type="button">${t("useMake")}</button>
           <button id="templateActionOpenBtn" class="secondary" type="button">${t("useOpen")}</button>
           <button id="templateActionThawBtn" class="secondary" type="button">${t("useThaw")}</button>
@@ -1337,6 +1344,10 @@ function runTemplateAction(action) {
   const templateId = activeTemplateActionId;
   if (!templateId) return;
   closeTemplateActionModal();
+  if (action === "factory") {
+    openTemplatePrintModal(templateId, "factory");
+    return;
+  }
   if (action === "make") {
     openTemplatePrintModal(templateId, "make");
     return;
@@ -1553,6 +1564,7 @@ function clearAll() {
 
 function labelHtml(food, options = {}) {
   const clean = (value) => String(value ?? "").trim();
+  const factoryOnly = food.labelMode === "factory";
   const rawTitle = clean(food.name) || (options.preview ? "Nombre del alimento" : "");
   const titleClass = rawTitle.length > 44 ? "label-title-xs" : (rawTitle.length > 30 ? "label-title-s" : "");
   const titleClassAttr = titleClass ? ` class="${titleClass}"` : "";
@@ -1575,14 +1587,14 @@ function labelHtml(food, options = {}) {
     : [];
   const rows = [
     textRow(t("printCode"), productCode(food)),
-    textRow(t("printStorage"), storageLabel(food.storage)),
-    dateRow(t("printMake"), food.makeTime),
+    factoryOnly ? "" : textRow(t("printStorage"), storageLabel(food.storage)),
+    factoryOnly ? "" : dateRow(t("printMake"), food.makeTime),
     dateRow(t("printExpiry"), food.expiryTime, { bold: true }),
-    dateRow(t("printOpen"), food.openTime),
-    dateRow(t("printThaw"), food.thawTime),
-    textRow(t("printAllergens"), allergenValues.join(", ")),
-    textRow(t("printUse"), food.suggestion),
-    textRow(t("printLot"), food.note),
+    factoryOnly ? "" : dateRow(t("printOpen"), food.openTime),
+    factoryOnly ? "" : dateRow(t("printThaw"), food.thawTime),
+    factoryOnly ? "" : textRow(t("printAllergens"), allergenValues.join(", ")),
+    factoryOnly ? "" : textRow(t("printUse"), food.suggestion),
+    factoryOnly ? "" : textRow(t("printLot"), food.note),
   ].filter(Boolean).join("");
   const tableHtml = rows ? `<table>${rows}</table>` : "";
 
@@ -1615,6 +1627,7 @@ function androidPrinterAvailable() {
 
 function labelPrintPayload(food) {
   const dateText = (value) => value ? fullDateTime(value) : "";
+  const factoryOnly = food.labelMode === "factory";
   return {
     widthMm: clamp(Number(state.settings.labelWidthMm || 80), 30, 120),
     heightMm: clamp(Number(state.settings.labelHeightMm || 50), 20, 120),
@@ -1622,19 +1635,20 @@ function labelPrintPayload(food) {
     shopName: state.settings.shopName || "",
     code: productCode(food),
     name: food.name || "",
-    storage: food.storage || "",
-    storageText: storageLabel(food.storage),
-    makeTime: food.makeTime || "",
-    makeTimeText: dateText(food.makeTime),
-    openTime: food.openTime || "",
-    openTimeText: dateText(food.openTime),
-    thawTime: food.thawTime || "",
-    thawTimeText: dateText(food.thawTime),
+    labelMode: food.labelMode || "",
+    storage: factoryOnly ? "" : (food.storage || ""),
+    storageText: factoryOnly ? "" : storageLabel(food.storage),
+    makeTime: factoryOnly ? "" : (food.makeTime || ""),
+    makeTimeText: factoryOnly ? "" : dateText(food.makeTime),
+    openTime: factoryOnly ? "" : (food.openTime || ""),
+    openTimeText: factoryOnly ? "" : dateText(food.openTime),
+    thawTime: factoryOnly ? "" : (food.thawTime || ""),
+    thawTimeText: factoryOnly ? "" : dateText(food.thawTime),
     expiryTime: food.expiryTime || "",
     expiryTimeText: dateText(food.expiryTime),
-    allergens: Array.isArray(food.allergens) ? food.allergens : [],
-    suggestion: food.suggestion || "",
-    note: food.note || "",
+    allergens: factoryOnly ? [] : (Array.isArray(food.allergens) ? food.allergens : []),
+    suggestion: factoryOnly ? "" : (food.suggestion || ""),
+    note: factoryOnly ? "" : (food.note || ""),
     printLabels: {
       code: t("printCode"),
       storage: t("printStorage"),
@@ -1671,19 +1685,21 @@ function openTemplatePrintModal(templateId, mode) {
   const tpl = state.templates.find((item) => item.id === templateId);
   if (!tpl) return;
   activeTemplateForPrint = tpl;
-  activeTemplateMode = mode === "make" || mode === "thaw" ? mode : "open";
+  activeTemplateMode = ["factory", "make", "thaw"].includes(mode) ? mode : "open";
   const modal = document.getElementById("templatePrintModal");
   const info = document.getElementById("templatePrintInfo");
   const label = document.getElementById("templateExpiryLabel");
   const input = document.getElementById("templateExpiryInput");
   const lotLabel = document.getElementById("templateLotLabel");
   const lotInput = document.getElementById("templateLotInput");
-  const modeText = activeTemplateMode === "make"
-    ? t("modeMake")
-    : activeTemplateMode === "thaw"
-      ? t("modeThaw")
-      : t("modeOpen");
-  const showManualExpiry = activeTemplateMode !== "thaw" && !templateHasProgrammedExpiry(tpl);
+  const modeText = activeTemplateMode === "factory"
+    ? t("modeFactory")
+    : activeTemplateMode === "make"
+      ? t("modeMake")
+      : activeTemplateMode === "thaw"
+        ? t("modeThaw")
+        : t("modeOpen");
+  const showManualExpiry = activeTemplateMode === "factory" || (activeTemplateMode !== "thaw" && !templateHasProgrammedExpiry(tpl));
   const showLot = activeTemplateMode === "make" || activeTemplateMode === "open";
   templateManualExpiryRequired = showManualExpiry;
   info.textContent = `${tpl.name} · ${storageLabel(tpl.storage)} · ${templateExpiryLabel(tpl)} · ${modeText}`;
@@ -1716,6 +1732,10 @@ function saveFromTemplateAndPrint() {
   const expiryInput = document.getElementById("templateExpiryInput").value;
   const lotInput = document.getElementById("templateLotInput");
   const lot = (lotInput?.value || "").trim();
+  if (activeTemplateMode === "factory" && !expiryInput) {
+    toast(t("msgNeedExpiry"));
+    return;
+  }
   if (activeTemplateMode === "thaw" && !templateHasProgrammedExpiry(tpl)) {
     toast(t("msgNeedProgrammedExpiry"));
     return;
@@ -1729,7 +1749,7 @@ function saveFromTemplateAndPrint() {
   const openTime = activeTemplateMode === "open" ? nowValue : "";
   const thawTime = activeTemplateMode === "thaw" ? nowValue : "";
   const expiryBase = makeTime || openTime || thawTime || nowValue;
-  const expiryTime = expiryInput || addTemplateExpiry(expiryBase, tpl);
+  const expiryTime = activeTemplateMode === "factory" ? expiryInput : (expiryInput || addTemplateExpiry(expiryBase, tpl));
   if (!expiryTime) {
     toast(t("msgNeedExpiry"));
     return;
@@ -1743,13 +1763,14 @@ function saveFromTemplateAndPrint() {
     area: normalizeTemplateArea(tpl.area),
     name: tpl.name,
     storage: tpl.storage,
+    labelMode: activeTemplateMode === "factory" ? "factory" : "",
     makeTime,
     openTime,
     thawTime,
     expiryTime,
-    suggestion: tpl.suggestion || "",
-    note: lot,
-    allergens: tpl.allergens || [],
+    suggestion: activeTemplateMode === "factory" ? "" : (tpl.suggestion || ""),
+    note: activeTemplateMode === "factory" ? "" : lot,
+    allergens: activeTemplateMode === "factory" ? [] : (tpl.allergens || []),
   };
   state.foods.push(food);
   saveState();
