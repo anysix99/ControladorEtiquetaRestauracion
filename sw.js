@@ -1,4 +1,4 @@
-const CACHE_NAME = "food-expiry-manager-v12";
+const CACHE_NAME = "food-expiry-manager-v13";
 const ASSETS = [
   "./",
   "./index.html",

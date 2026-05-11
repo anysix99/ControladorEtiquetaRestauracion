@@ -1,0 +1,38 @@
+plugins {
+    id "com.android.application"
+}
+
+android {
+    namespace "com.anysix.d35bttest"
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "com.anysix.d35bttest"
+        minSdk 23
+        targetSdk 35
+        versionCode 1
+        versionName "1.0"
+    }
+
+    sourceSets {
+        main {
+            assets.srcDirs += "$buildDir/generated/web-assets"
+        }
+    }
+}
+
+tasks.register("syncWebAssets", Copy) {
+    from("../..") {
+        include "index.html"
+        include "app.js"
+        include "styles.css"
+        include "manifest.webmanifest"
+        include "sw.js"
+        include "icon.svg"
+        include "icon-192.png"
+        include "icon-512.png"
+    }
+    into "$buildDir/generated/web-assets/app"
+}
+
+preBuild.dependsOn("syncWebAssets")

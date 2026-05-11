@@ -170,6 +170,8 @@ const i18n = {
     msgSupabaseUploaded: "Subido a Supabase.",
     msgSupabaseNoData: "No hay datos en Supabase para este ID.",
     msgSupabaseDownloaded: "Datos descargados de Supabase.",
+    msgAndroidPrintSent: "Etiqueta enviada a D35BT.",
+    msgAndroidPrintError: "No se pudo enviar a D35BT.",
   },
   zh: {
     appTitle: "APPCC保质期管理",
@@ -325,6 +327,8 @@ const i18n = {
     msgSupabaseUploaded: "已上传到 Supabase。",
     msgSupabaseNoData: "该 ID 在 Supabase 中没有数据。",
     msgSupabaseDownloaded: "已从 Supabase 下载数据。",
+    msgAndroidPrintSent: "标签已发送到 D35BT。",
+    msgAndroidPrintError: "无法发送到 D35BT。",
   },
 };
 
@@ -1553,9 +1557,45 @@ function labelPrintStyle() {
   `;
 }
 
+function androidPrinterAvailable() {
+  return Boolean(window.AndroidPrinter && typeof window.AndroidPrinter.printLabel === "function");
+}
+
+function labelPrintPayload(food) {
+  const dateText = (value) => value ? fullDateTime(value) : "";
+  return {
+    widthMm: clamp(Number(state.settings.labelWidthMm || 80), 30, 120),
+    heightMm: clamp(Number(state.settings.labelHeightMm || 50), 20, 120),
+    shopName: state.settings.shopName || "",
+    name: food.name || "",
+    storage: food.storage || "",
+    makeTime: food.makeTime || "",
+    makeTimeText: dateText(food.makeTime),
+    openTime: food.openTime || "",
+    openTimeText: dateText(food.openTime),
+    thawTime: food.thawTime || "",
+    thawTimeText: dateText(food.thawTime),
+    expiryTime: food.expiryTime || "",
+    expiryTimeText: dateText(food.expiryTime),
+    allergens: Array.isArray(food.allergens) ? food.allergens : [],
+    suggestion: food.suggestion || "",
+    note: food.note || "",
+  };
+}
+
 function printFood(id) {
   const food = state.foods.find((item) => item.id === id);
   if (!food) return;
+  if (androidPrinterAvailable()) {
+    try {
+      window.AndroidPrinter.printLabel(JSON.stringify(labelPrintPayload(food)));
+      toast(t("msgAndroidPrintSent"));
+      return;
+    } catch (error) {
+      console.error(error);
+      toast(t("msgAndroidPrintError"));
+    }
+  }
   const printArea = document.getElementById("printArea");
   printArea.innerHTML = `${labelPrintStyle()}${labelHtml(food)}`;
   setTimeout(() => window.print(), 80);

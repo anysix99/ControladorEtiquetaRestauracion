@@ -63,6 +63,14 @@ En Android puedes usar:
 - Impresora Wi-Fi.
 - Impresión del sistema.
 
+## Prueba D35BT BLE
+
+Hay un proyecto Android nativo mínimo en `android-d35bt-test`. Sirve para probar la conexión BLE con HPRT/Hanin D35BT y enviar una etiqueta TSPL simple antes de integrar la impresión directa en esta app.
+
+Abre `android-d35bt-test` con Android Studio, ejecuta en un móvil Android, escanea el D35BT y pulsa `打印 TSPL 测试`.
+
+Ese mismo proyecto también incluye un WebView de la app principal. Al abrir la app Android, `Imprimir` usa `window.AndroidPrinter.printLabel(...)` y envía TSPL por BLE al D35BT. La pantalla de prueba BLE queda disponible como `BleTestActivity` para depuración.
+
 ## Datos
 
 Por defecto se guarda en `localStorage` del dispositivo.
