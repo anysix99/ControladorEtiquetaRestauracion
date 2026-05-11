@@ -1592,9 +1592,9 @@ function labelHtml(food, options = {}) {
     dateRow(t("printExpiry"), food.expiryTime, { bold: true }),
     factoryOnly ? "" : dateRow(t("printOpen"), food.openTime),
     factoryOnly ? "" : dateRow(t("printThaw"), food.thawTime),
-    factoryOnly ? "" : textRow(t("printAllergens"), allergenValues.join(", ")),
+    textRow(t("printAllergens"), allergenValues.join(", ")),
     factoryOnly ? "" : textRow(t("printUse"), food.suggestion),
-    factoryOnly ? "" : textRow(t("printLot"), food.note),
+    textRow(t("printLot"), food.note),
   ].filter(Boolean).join("");
   const tableHtml = rows ? `<table>${rows}</table>` : "";
 
@@ -1646,9 +1646,9 @@ function labelPrintPayload(food) {
     thawTimeText: factoryOnly ? "" : dateText(food.thawTime),
     expiryTime: food.expiryTime || "",
     expiryTimeText: dateText(food.expiryTime),
-    allergens: factoryOnly ? [] : (Array.isArray(food.allergens) ? food.allergens : []),
+    allergens: Array.isArray(food.allergens) ? food.allergens : [],
     suggestion: factoryOnly ? "" : (food.suggestion || ""),
-    note: factoryOnly ? "" : (food.note || ""),
+    note: food.note || "",
     printLabels: {
       code: t("printCode"),
       storage: t("printStorage"),
@@ -1700,7 +1700,7 @@ function openTemplatePrintModal(templateId, mode) {
         ? t("modeThaw")
         : t("modeOpen");
   const showManualExpiry = activeTemplateMode === "factory" || (activeTemplateMode !== "thaw" && !templateHasProgrammedExpiry(tpl));
-  const showLot = activeTemplateMode === "make" || activeTemplateMode === "open";
+  const showLot = activeTemplateMode === "factory" || activeTemplateMode === "make" || activeTemplateMode === "open";
   templateManualExpiryRequired = showManualExpiry;
   info.textContent = `${tpl.name} · ${storageLabel(tpl.storage)} · ${templateExpiryLabel(tpl)} · ${modeText}`;
   input.value = "";
@@ -1769,8 +1769,8 @@ function saveFromTemplateAndPrint() {
     thawTime,
     expiryTime,
     suggestion: activeTemplateMode === "factory" ? "" : (tpl.suggestion || ""),
-    note: activeTemplateMode === "factory" ? "" : lot,
-    allergens: activeTemplateMode === "factory" ? [] : (tpl.allergens || []),
+    note: lot,
+    allergens: tpl.allergens || [],
   };
   state.foods.push(food);
   saveState();
