@@ -191,11 +191,15 @@ public class MainActivity extends Activity {
     }
 
     private String buildTspl(JSONObject label) {
-        int widthMm = clamp(label.optInt("widthMm", 80), 30, 80);
+        int widthMm = clamp(label.optInt("widthMm", 80), 30, 72);
         int heightMm = clamp(label.optInt("heightMm", 50), 20, 120);
-        int x = 24;
-        int y = 24;
-        int line = 36;
+        int x = 20;
+        int y = 22;
+        int line = 30;
+        int maxY = heightMm * 8 - line;
+        int maxRowUnits = widthMm <= 60 ? 34 : 42;
+        int maxTitleUnits = widthMm <= 60 ? 22 : 28;
+        JSONObject printLabels = label.optJSONObject("printLabels");
 
         StringBuilder tspl = new StringBuilder();
         tspl.append("SIZE ").append(widthMm).append(" mm,").append(heightMm).append(" mm\r\n");
@@ -203,36 +207,66 @@ public class MainActivity extends Activity {
         tspl.append("DIRECTION 1\r\n");
         tspl.append("CLS\r\n");
         tspl.append("TEXT ").append(x).append(",").append(y).append(",\"TSS24.BF2\",0,1,1,\"")
-                .append(escapeTspl(label.optString("name", ""))).append("\"\r\n");
-        y += line + 8;
+                .append(escapeTspl(shortenUnits(label.optString("name", ""), maxTitleUnits))).append("\"\r\n");
+        y += line + 4;
 
-        appendRow(tspl, x, y, "Conserv.", label.optString("storage", ""));
-        y += line;
-        appendRow(tspl, x, y, "Apert.", label.optString("openTimeText", ""));
-        y += line;
-        appendRow(tspl, x, y, "Descong.", label.optString("thawTimeText", ""));
-        y += line;
-        appendRow(tspl, x, y, "Caduc.", label.optString("expiryTimeText", ""));
-        y += line;
+        y = appendRow(tspl, x, y, labelText(printLabels, "code", "ID"), label.optString("code", ""), line, maxY, maxRowUnits);
+        y = appendRow(tspl, x, y, labelText(printLabels, "storage", "Cons."), label.optString("storageText", label.optString("storage", "")), line, maxY, maxRowUnits);
+        y = appendRow(tspl, x, y, labelText(printLabels, "make", "Elab."), label.optString("makeTimeText", ""), line, maxY, maxRowUnits);
+        y = appendRow(tspl, x, y, labelText(printLabels, "expiry", "Cad."), label.optString("expiryTimeText", ""), line, maxY, maxRowUnits);
+        y = appendRow(tspl, x, y, labelText(printLabels, "open", "Apert."), label.optString("openTimeText", ""), line, maxY, maxRowUnits);
+        y = appendRow(tspl, x, y, labelText(printLabels, "thaw", "Desc."), label.optString("thawTimeText", ""), line, maxY, maxRowUnits);
 
         String allergens = joinArray(label.optJSONArray("allergens"));
-        appendRow(tspl, x, y, "Alerg.", allergens);
-        y += line;
-
-        String note = label.optString("note", "");
-        if (!note.isEmpty()) {
-            appendRow(tspl, x, y, "Lote", note);
-        }
+        y = appendRow(tspl, x, y, labelText(printLabels, "allergens", "Alerg."), allergens, line, maxY, maxRowUnits);
+        y = appendRow(tspl, x, y, labelText(printLabels, "use", "Uso"), label.optString("suggestion", ""), line, maxY, maxRowUnits);
+        appendRow(tspl, x, y, labelText(printLabels, "lot", "Lote"), label.optString("note", ""), line, maxY, maxRowUnits);
 
         tspl.append("PRINT 1,1\r\n");
         return tspl.toString();
     }
 
-    private void appendRow(StringBuilder tspl, int x, int y, String label, String value) {
-        String text = label + ": " + value;
-        if (text.trim().equals(label + ":")) return;
+    private int appendRow(StringBuilder tspl, int x, int y, String label, String value, int line, int maxY, int maxUnits) {
+        String cleanValue = value == null ? "" : value.trim();
+        if (cleanValue.isEmpty() || y > maxY) return y;
+        String cleanLabel = label == null ? "" : label.trim();
+        String text = cleanLabel.isEmpty() ? cleanValue : cleanLabel + ": " + cleanValue;
         tspl.append("TEXT ").append(x).append(",").append(y).append(",\"TSS24.BF2\",0,1,1,\"")
-                .append(escapeTspl(text)).append("\"\r\n");
+                .append(escapeTspl(shortenUnits(text, maxUnits))).append("\"\r\n");
+        return y + line;
+    }
+
+    private String labelText(JSONObject labels, String key, String fallback) {
+        if (labels == null) return fallback;
+        String value = labels.optString(key, fallback);
+        return value == null || value.trim().isEmpty() ? fallback : value;
+    }
+
+    private String shortenUnits(String value, int maxUnits) {
+        String clean = value == null ? "" : value.replace("\r", " ").replace("\n", " ").trim();
+        if (displayUnits(clean) <= maxUnits) return clean;
+        int limit = Math.max(1, maxUnits - 1);
+        StringBuilder out = new StringBuilder();
+        int used = 0;
+        for (int offset = 0; offset < clean.length(); ) {
+            int codePoint = clean.codePointAt(offset);
+            int units = codePoint <= 0x7f ? 1 : 2;
+            if (used + units > limit) break;
+            out.appendCodePoint(codePoint);
+            used += units;
+            offset += Character.charCount(codePoint);
+        }
+        return out.toString().trim() + ".";
+    }
+
+    private int displayUnits(String value) {
+        int units = 0;
+        for (int offset = 0; offset < value.length(); ) {
+            int codePoint = value.codePointAt(offset);
+            units += codePoint <= 0x7f ? 1 : 2;
+            offset += Character.charCount(codePoint);
+        }
+        return units;
     }
 
     private String joinArray(JSONArray array) {

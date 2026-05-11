@@ -30,6 +30,8 @@ const i18n = {
     nav_settings: "Ajustes",
     modalTitle: "Imprimir desde plantilla",
     modalExpiry: "Fecha de caducidad (opcional)",
+    modalLot: "Lote (opcional)",
+    modalLotPlaceholder: "Ej: lote interno o responsable",
     modalPrint: "Imprimir",
     modalCancel: "Cancelar",
     manualExpiry: "Manual",
@@ -65,10 +67,10 @@ const i18n = {
     nameFood: "Nombre del alimento / preparación",
     nameFoodPlaceholder: "Ej: pollo kung pao preparado",
     storage: "Conservación",
-    makeTime: "Fecha y hora de elaboración",
-    openTime: "Fecha y hora de apertura (开封时间)",
-    thawTime: "Fecha y hora de descongelación",
-    expiryTime: "Fecha y hora de caducidad",
+    makeTime: "Fecha de producción / elaboración",
+    expiryTime: "Fecha de caducidad / fecha límite",
+    openTime: "Fecha de apertura",
+    thawTime: "Fecha de descongelación",
     quickExpiry: "Caducidad rápida",
     suggestion: "Recomendación de uso / conservación",
     suggestionPlaceholder: "Ej: conservar refrigerado y usar utensilio limpio.",
@@ -81,10 +83,10 @@ const i18n = {
     labelPreview: "Vista previa de etiqueta",
     foodList: "Listado de alimentos",
     foodListHint: "Ordenado por caducidad. Lo que caduca antes aparece primero.",
-    makeCol: "Elaboración",
-    openCol: "Apertura",
+    makeCol: "Producción",
     expiryCol: "Caducidad",
-    thawCol: "Descongel.",
+    openCol: "Apertura",
+    thawCol: "Descongelación",
     allergensCol: "Alérgenos",
     notDeclared: "Sin declarar",
     print: "Imprimir",
@@ -108,6 +110,7 @@ const i18n = {
     defaultAllergens: "Alérgenos por defecto",
     saveTemplate: "Guardar plantilla",
     noAllergens: "Sin alérgenos",
+    useMake: "Usar elaboración",
     useOpen: "Usar apertura",
     useThaw: "Usar descongel.",
     add: "Añadir",
@@ -155,8 +158,18 @@ const i18n = {
     msgConfirmClear: "¿Seguro que quieres borrar todos los registros y plantillas?",
     msgCleared: "Datos borrados.",
     msgFromTemplate: "Etiqueta creada desde plantilla.",
+    modeMake: "Elaboración / 制作时间",
     modeOpen: "Apertura / 开封时间",
     modeThaw: "Descongelación / 解冻时间",
+    printStorage: "Cons.",
+    printMake: "Elab.",
+    printExpiry: "Cad.",
+    printOpen: "Apert.",
+    printThaw: "Desc.",
+    printAllergens: "Alérg.",
+    printUse: "Uso",
+    printLot: "Lote",
+    printCode: "ID",
     msgNoNotification: "Este navegador no permite avisos del sistema.",
     msgNotificationsOn: "Avisos activados.",
     msgNotificationsOff: "Avisos no activados.",
@@ -187,6 +200,8 @@ const i18n = {
     nav_settings: "设置",
     modalTitle: "从模板打印",
     modalExpiry: "到期时间（可选）",
+    modalLot: "批次（可选）",
+    modalLotPlaceholder: "例如：内部批次或负责人",
     modalPrint: "打印",
     modalCancel: "取消",
     manualExpiry: "手动",
@@ -222,10 +237,10 @@ const i18n = {
     nameFood: "食品/备菜名称",
     nameFoodPlaceholder: "例如：宫保鸡丁（已备）",
     storage: "保存方式",
-    makeTime: "制作时间",
-    openTime: "开封时间 (开封时间)",
-    thawTime: "解冻时间",
-    expiryTime: "到期时间",
+    makeTime: "生产/制作日期",
+    expiryTime: "保质期 / 截止日期",
+    openTime: "开封日期",
+    thawTime: "解冻日期",
     quickExpiry: "快速到期",
     suggestion: "使用/保存建议",
     suggestionPlaceholder: "例如：冷藏保存，使用干净工具。",
@@ -238,9 +253,9 @@ const i18n = {
     labelPreview: "标签预览",
     foodList: "食品列表",
     foodListHint: "按到期排序，最先到期在前。",
-    makeCol: "制作",
+    makeCol: "生产/制作",
+    expiryCol: "保质期/截止",
     openCol: "开封",
-    expiryCol: "到期",
     thawCol: "解冻",
     allergensCol: "过敏原",
     notDeclared: "未填写",
@@ -265,6 +280,7 @@ const i18n = {
     defaultAllergens: "默认过敏原",
     saveTemplate: "保存模板",
     noAllergens: "无过敏原",
+    useMake: "用于制作",
     useOpen: "用于开封",
     useThaw: "用于解冻",
     add: "新增",
@@ -312,8 +328,18 @@ const i18n = {
     msgConfirmClear: "确定要删除所有记录和模板吗？",
     msgCleared: "数据已清空。",
     msgFromTemplate: "已从模板创建并打印标签。",
+    modeMake: "制作 / Elaboración",
     modeOpen: "开封 / Apertura",
     modeThaw: "解冻 / Descongelación",
+    printStorage: "存",
+    printMake: "制",
+    printExpiry: "期",
+    printOpen: "开",
+    printThaw: "解",
+    printAllergens: "敏",
+    printUse: "用",
+    printLot: "批",
+    printCode: "ID",
     msgNoNotification: "此浏览器不支持系统通知。",
     msgNotificationsOn: "通知已开启。",
     msgNotificationsOff: "通知未开启。",
@@ -526,6 +552,14 @@ function makeId(prefix) {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function productCode(food) {
+  const explicit = String(food?.code || "").trim();
+  if (explicit) return explicit.toUpperCase();
+  const id = String(food?.id || "").trim();
+  if (!id || id === "preview") return "";
+  return id.split("-").pop().slice(0, 8).toUpperCase();
+}
+
 function nowLocalValue() {
   const d = new Date();
   d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
@@ -647,6 +681,12 @@ function updateChromeTexts() {
   if (expiryLabel) {
     expiryLabel.childNodes[0].textContent = `${t("modalExpiry")} `;
   }
+  const lotLabel = document.getElementById("templateLotLabel");
+  const lotInput = document.getElementById("templateLotInput");
+  if (lotLabel) {
+    lotLabel.childNodes[0].textContent = `${t("modalLot")} `;
+  }
+  if (lotInput) lotInput.placeholder = t("modalLotPlaceholder");
   const printBtn = document.getElementById("templatePrintConfirmBtn");
   if (printBtn) printBtn.textContent = t("modalPrint");
   const cancelBtn = document.getElementById("templatePrintCancelBtn");
@@ -722,6 +762,7 @@ function bindScreenEvents() {
   document.getElementById("templateCreateModal")?.addEventListener("click", (event) => {
     if (event.target.id === "templateCreateModal") closeTemplateCreateModal();
   });
+  document.getElementById("templateActionMakeBtn")?.addEventListener("click", () => runTemplateAction("make"));
   document.getElementById("templateActionOpenBtn")?.addEventListener("click", () => runTemplateAction("open"));
   document.getElementById("templateActionThawBtn")?.addEventListener("click", () => runTemplateAction("thaw"));
   document.getElementById("templateActionEditBtn")?.addEventListener("click", () => runTemplateAction("edit"));
@@ -808,6 +849,7 @@ function renderTemplateRows(area) {
                 <span class="muted">${storageLabel(tpl.storage)} · ${templateExpiryLabel(tpl)} · ${(tpl.allergens || []).join(", ") || t("noAllergens")}</span>
                 <p class="muted">${escapeHtml(tpl.suggestion || "")}</p>
                 <div class="actions">
+                  <button class="secondary" data-use-template="${tpl.id}" data-mode="make" type="button">${t("useMake")}</button>
                   <button class="secondary" data-use-template="${tpl.id}" data-mode="open" type="button">${t("useOpen")}</button>
                   <button class="secondary" data-use-template="${tpl.id}" data-mode="thaw" type="button">${t("useThaw")}</button>
                   <button class="secondary" data-edit-template="${tpl.id}" type="button">${t("edit")}</button>
@@ -907,16 +949,16 @@ function renderFoodForm() {
           <input name="makeTime" type="datetime-local" value="${escapeHtml(base.makeTime || nowLocalValue())}" required>
         </label>
 
+        <label>${t("expiryTime")}
+          <input name="expiryTime" type="datetime-local" value="${escapeHtml(base.expiryTime || "")}" required>
+        </label>
+
         <label>${t("openTime")}
           <input name="openTime" type="datetime-local" value="${escapeHtml(base.openTime || "")}">
         </label>
 
         <label>${t("thawTime")}
           <input name="thawTime" type="datetime-local" value="${escapeHtml(base.thawTime || "")}">
-        </label>
-
-        <label>${t("expiryTime")}
-          <input name="expiryTime" type="datetime-local" value="${escapeHtml(base.expiryTime || "")}" required>
         </label>
 
         <fieldset>
@@ -1072,10 +1114,12 @@ function saveFood(form) {
     const index = state.foods.findIndex((item) => item.id === editingId);
     food.id = editingId;
     food.createdAt = state.foods[index]?.createdAt || new Date().toISOString();
+    food.code = state.foods[index]?.code || productCode(food);
     state.foods[index] = food;
     toast(t("msgSavedChanges"));
   } else {
     food.id = makeId("food");
+    food.code = productCode(food);
     food.createdAt = new Date().toISOString();
     state.foods.push(food);
     toast(t("msgSavedFood"));
@@ -1109,9 +1153,10 @@ function foodCard(food) {
         <span class="status ${status.className}">${escapeHtml(status.text)}</span>
       </div>
       <div class="meta">
+        <span>${t("printCode")}</span><b>${escapeHtml(productCode(food))}</b>
         <span>${t("makeCol")}</span><b>${fullDateTime(food.makeTime)}</b>
-        <span>${t("openCol")}</span><b>${fullDateTime(food.openTime)}</b>
         <span>${t("expiryCol")}</span><b>${fullDateTime(food.expiryTime)}</b>
+        <span>${t("openCol")}</span><b>${fullDateTime(food.openTime)}</b>
         <span>${t("thawCol")}</span><b>${fullDateTime(food.thawTime)}</b>
         <span>${t("allergensCol")}</span><b>${escapeHtml((food.allergens || []).join(", ") || t("notDeclared"))}</b>
       </div>
@@ -1196,6 +1241,7 @@ function templateActionModalHtml() {
         <h3 id="templateActionTitle">${t("templateActionTitle")}</h3>
         <p id="templateActionInfo" class="muted"></p>
         <div class="actions">
+          <button id="templateActionMakeBtn" class="secondary" type="button">${t("useMake")}</button>
           <button id="templateActionOpenBtn" class="secondary" type="button">${t("useOpen")}</button>
           <button id="templateActionThawBtn" class="secondary" type="button">${t("useThaw")}</button>
           <button id="templateActionEditBtn" class="secondary" type="button">${t("edit")}</button>
@@ -1291,6 +1337,10 @@ function runTemplateAction(action) {
   const templateId = activeTemplateActionId;
   if (!templateId) return;
   closeTemplateActionModal();
+  if (action === "make") {
+    openTemplatePrintModal(templateId, "make");
+    return;
+  }
   if (action === "open") {
     openTemplatePrintModal(templateId, "open");
     return;
@@ -1524,13 +1574,15 @@ function labelHtml(food, options = {}) {
     ? food.allergens.map((item) => clean(item)).filter(Boolean)
     : [];
   const rows = [
-    textRow("Conserv.", food.storage),
-    dateRow("Apert.", food.openTime),
-    dateRow("Descong.", food.thawTime),
-    dateRow("Caduc.", food.expiryTime, { bold: true }),
-    textRow("Alérg.", allergenValues.join(", ")),
-    textRow("Uso", food.suggestion),
-    textRow("Lote", food.note),
+    textRow(t("printCode"), productCode(food)),
+    textRow(t("printStorage"), storageLabel(food.storage)),
+    dateRow(t("printMake"), food.makeTime),
+    dateRow(t("printExpiry"), food.expiryTime, { bold: true }),
+    dateRow(t("printOpen"), food.openTime),
+    dateRow(t("printThaw"), food.thawTime),
+    textRow(t("printAllergens"), allergenValues.join(", ")),
+    textRow(t("printUse"), food.suggestion),
+    textRow(t("printLot"), food.note),
   ].filter(Boolean).join("");
   const tableHtml = rows ? `<table>${rows}</table>` : "";
 
@@ -1552,7 +1604,7 @@ function labelPrintStyle() {
   return `
     <style media="print">
       @page { size: ${width}mm ${height}mm; margin: ${margin}mm; }
-      .print-label { width: ${contentW}mm; min-height: ${contentH}mm; page-break-after: always; }
+      .print-label { width: ${contentW}mm; height: ${contentH}mm; overflow: hidden; page-break-after: always; }
     </style>
   `;
 }
@@ -1566,9 +1618,12 @@ function labelPrintPayload(food) {
   return {
     widthMm: clamp(Number(state.settings.labelWidthMm || 80), 30, 120),
     heightMm: clamp(Number(state.settings.labelHeightMm || 50), 20, 120),
+    language: currentLanguage(),
     shopName: state.settings.shopName || "",
+    code: productCode(food),
     name: food.name || "",
     storage: food.storage || "",
+    storageText: storageLabel(food.storage),
     makeTime: food.makeTime || "",
     makeTimeText: dateText(food.makeTime),
     openTime: food.openTime || "",
@@ -1580,6 +1635,17 @@ function labelPrintPayload(food) {
     allergens: Array.isArray(food.allergens) ? food.allergens : [],
     suggestion: food.suggestion || "",
     note: food.note || "",
+    printLabels: {
+      code: t("printCode"),
+      storage: t("printStorage"),
+      make: t("printMake"),
+      expiry: t("printExpiry"),
+      open: t("printOpen"),
+      thaw: t("printThaw"),
+      allergens: t("printAllergens"),
+      use: t("printUse"),
+      lot: t("printLot"),
+    },
   };
 }
 
@@ -1605,18 +1671,30 @@ function openTemplatePrintModal(templateId, mode) {
   const tpl = state.templates.find((item) => item.id === templateId);
   if (!tpl) return;
   activeTemplateForPrint = tpl;
-  activeTemplateMode = mode === "thaw" ? "thaw" : "open";
+  activeTemplateMode = mode === "make" || mode === "thaw" ? mode : "open";
   const modal = document.getElementById("templatePrintModal");
   const info = document.getElementById("templatePrintInfo");
   const label = document.getElementById("templateExpiryLabel");
   const input = document.getElementById("templateExpiryInput");
-  const modeText = activeTemplateMode === "thaw" ? t("modeThaw") : t("modeOpen");
-  const showManualExpiry = activeTemplateMode === "open" && !templateHasProgrammedExpiry(tpl);
+  const lotLabel = document.getElementById("templateLotLabel");
+  const lotInput = document.getElementById("templateLotInput");
+  const modeText = activeTemplateMode === "make"
+    ? t("modeMake")
+    : activeTemplateMode === "thaw"
+      ? t("modeThaw")
+      : t("modeOpen");
+  const showManualExpiry = activeTemplateMode !== "thaw" && !templateHasProgrammedExpiry(tpl);
+  const showLot = activeTemplateMode === "make" || activeTemplateMode === "open";
   templateManualExpiryRequired = showManualExpiry;
   info.textContent = `${tpl.name} · ${storageLabel(tpl.storage)} · ${templateExpiryLabel(tpl)} · ${modeText}`;
   input.value = "";
   input.required = showManualExpiry;
+  if (lotInput) {
+    lotInput.value = "";
+    lotInput.required = false;
+  }
   if (label) label.classList.toggle("hidden-field", !showManualExpiry);
+  if (lotLabel) lotLabel.classList.toggle("hidden-field", !showLot);
   modal.classList.remove("hidden");
   modal.setAttribute("aria-hidden", "false");
 }
@@ -1628,12 +1706,16 @@ function closeTemplatePrintModal() {
   activeTemplateForPrint = null;
   activeTemplateMode = "open";
   templateManualExpiryRequired = false;
+  const lotInput = document.getElementById("templateLotInput");
+  if (lotInput) lotInput.value = "";
 }
 
 function saveFromTemplateAndPrint() {
   if (!activeTemplateForPrint) return;
   const tpl = activeTemplateForPrint;
   const expiryInput = document.getElementById("templateExpiryInput").value;
+  const lotInput = document.getElementById("templateLotInput");
+  const lot = (lotInput?.value || "").trim();
   if (activeTemplateMode === "thaw" && !templateHasProgrammedExpiry(tpl)) {
     toast(t("msgNeedProgrammedExpiry"));
     return;
@@ -1643,12 +1725,19 @@ function saveFromTemplateAndPrint() {
     return;
   }
   const nowValue = nowLocalValue();
-  const makeTime = nowValue;
-  const openTime = nowValue;
+  const makeTime = activeTemplateMode === "make" ? nowValue : "";
+  const openTime = activeTemplateMode === "open" ? nowValue : "";
   const thawTime = activeTemplateMode === "thaw" ? nowValue : "";
-  const expiryBase = activeTemplateMode === "thaw" ? thawTime : openTime;
+  const expiryBase = makeTime || openTime || thawTime || nowValue;
+  const expiryTime = expiryInput || addTemplateExpiry(expiryBase, tpl);
+  if (!expiryTime) {
+    toast(t("msgNeedExpiry"));
+    return;
+  }
+  const id = makeId("food");
   const food = {
-    id: makeId("food"),
+    id,
+    code: productCode({ id }),
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     area: normalizeTemplateArea(tpl.area),
@@ -1657,9 +1746,9 @@ function saveFromTemplateAndPrint() {
     makeTime,
     openTime,
     thawTime,
-    expiryTime: expiryInput || addTemplateExpiry(expiryBase, tpl),
+    expiryTime,
     suggestion: tpl.suggestion || "",
-    note: activeTemplateMode === "thaw" ? "Generado desde plantilla (descongelación)" : "Generado desde plantilla (apertura)",
+    note: lot,
     allergens: tpl.allergens || [],
   };
   state.foods.push(food);

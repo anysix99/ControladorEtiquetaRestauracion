@@ -575,8 +575,9 @@ textarea {
 
   .print-label table {
     width: 100%;
+    table-layout: fixed;
     border-collapse: collapse;
-    font-size: 8pt;
+    font-size: 7.5pt;
   }
 
   .print-label td {
@@ -588,5 +589,11 @@ textarea {
   .print-label td:first-child {
     width: 16mm;
     font-weight: 700;
+  }
+
+  .print-label td:last-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
